@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	"gocheckers/Godeps/_workspace/src/github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLevels(t *testing.T) {
@@ -51,6 +51,7 @@ func TestDefaultLogging(t *testing.T) {
 	WARN.Println("a warning")
 	INFO.Println("information")
 	DEBUG.Println("debugging info")
+	TRACE.Println("trace entry")
 
 	assert.Contains(t, logBuf.String(), "fatal err")
 	assert.Contains(t, logBuf.String(), "critical err")
@@ -58,6 +59,7 @@ func TestDefaultLogging(t *testing.T) {
 	assert.Contains(t, logBuf.String(), "a warning")
 	assert.NotContains(t, logBuf.String(), "information")
 	assert.NotContains(t, logBuf.String(), "debugging info")
+	assert.NotContains(t, logBuf.String(), "trace entry")
 
 	assert.Contains(t, outputBuf.String(), "fatal err")
 	assert.Contains(t, outputBuf.String(), "critical err")
@@ -65,4 +67,5 @@ func TestDefaultLogging(t *testing.T) {
 	assert.NotContains(t, outputBuf.String(), "a warning")
 	assert.NotContains(t, outputBuf.String(), "information")
 	assert.NotContains(t, outputBuf.String(), "debugging info")
+	assert.NotContains(t, outputBuf.String(), "trace entry")
 }
