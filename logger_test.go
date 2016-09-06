@@ -18,6 +18,19 @@ func TestLevels(t *testing.T) {
 	assert.Equal(t, outputThreshold, LevelWarn)
 }
 
+func BenchmarkLoggingNoop(b *testing.B) {
+	// Log into io.Discard
+	SetStdoutThreshold(LevelNone)
+	m := map[string]interface{}{
+		"int": 1,
+		"str": "test",
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		INFO.Printf("%s %#v", "test", m)
+	}
+}
+
 func TestSetLogFile(t *testing.T) {
 	err := SetLogFile("/tmp/testing")
 	assert.Equal(t, nil, err)
