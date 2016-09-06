@@ -14,20 +14,20 @@ type Level int
 
 // LevelLogger represents levelled logger.
 type LevelLogger struct {
-	writable int32
-	level    Level
-	prefix   string
-	Logger   *log.Logger
+	enabled int32
+	level   Level
+	prefix  string
+	Logger  *log.Logger
 }
 
 // skipLogging exists to prevent calling underlying logger methods when not needed.
-func (n *LevelLogger) skipLogging() bool {
-	return atomic.LoadInt32(&n.writable) == 0
+func (n *LevelLogger) Enabled() bool {
+	return atomic.LoadInt32(&n.enabled) != 0
 }
 
 // Print calls underlying Logger Print func.
 func (n *LevelLogger) Print(v ...interface{}) {
-	if ok := n.skipLogging(); ok {
+	if !n.Enabled() {
 		return
 	}
 	n.Logger.Print(v...)
@@ -35,7 +35,7 @@ func (n *LevelLogger) Print(v ...interface{}) {
 
 // Printf calls underlying Logger Printf func.
 func (n *LevelLogger) Printf(format string, v ...interface{}) {
-	if ok := n.skipLogging(); ok {
+	if !n.Enabled() {
 		return
 	}
 	n.Logger.Printf(format, v...)
@@ -43,7 +43,7 @@ func (n *LevelLogger) Printf(format string, v ...interface{}) {
 
 // Println calls underlying Logger Println func.
 func (n *LevelLogger) Println(v ...interface{}) {
-	if ok := n.skipLogging(); ok {
+	if !n.Enabled() {
 		return
 	}
 	n.Logger.Println(v...)
@@ -51,7 +51,7 @@ func (n *LevelLogger) Println(v ...interface{}) {
 
 // Fatal calls underlying Logger Fatal func.
 func (n *LevelLogger) Fatal(v ...interface{}) {
-	if ok := n.skipLogging(); ok {
+	if !n.Enabled() {
 		return
 	}
 	n.Logger.Fatal(v...)
@@ -59,7 +59,7 @@ func (n *LevelLogger) Fatal(v ...interface{}) {
 
 // Fatalf calls underlying Logger Fatalf func.
 func (n *LevelLogger) Fatalf(format string, v ...interface{}) {
-	if ok := n.skipLogging(); ok {
+	if !n.Enabled() {
 		return
 	}
 	n.Logger.Fatalf(format, v...)
@@ -67,7 +67,7 @@ func (n *LevelLogger) Fatalf(format string, v ...interface{}) {
 
 // Fatalln calls underlying Logger Fatalln func.
 func (n *LevelLogger) Fatalln(v ...interface{}) {
-	if ok := n.skipLogging(); ok {
+	if !n.Enabled() {
 		return
 	}
 	n.Logger.Fatalln(v...)
@@ -75,7 +75,7 @@ func (n *LevelLogger) Fatalln(v ...interface{}) {
 
 // Panic calls underlying Logger Panic func.
 func (n *LevelLogger) Panic(v ...interface{}) {
-	if ok := n.skipLogging(); ok {
+	if !n.Enabled() {
 		return
 	}
 	n.Logger.Panic(v...)
@@ -83,7 +83,7 @@ func (n *LevelLogger) Panic(v ...interface{}) {
 
 // Panicf calls underlying Logger Panicf func.
 func (n *LevelLogger) Panicf(format string, v ...interface{}) {
-	if ok := n.skipLogging(); ok {
+	if !n.Enabled() {
 		return
 	}
 	n.Logger.Panicf(format, v...)
@@ -91,7 +91,7 @@ func (n *LevelLogger) Panicf(format string, v ...interface{}) {
 
 // Panicln calls underlying Logger Panicln func.
 func (n *LevelLogger) Panicln(v ...interface{}) {
-	if ok := n.skipLogging(); ok {
+	if !n.Enabled() {
 		return
 	}
 	n.Logger.Panicln(v...)
@@ -155,25 +155,25 @@ func initialize() {
 	for _, l := range loggers {
 
 		var handler io.Writer
-		var writable int32
+		var enabled int32
 
 		if l.level < outputThreshold && l.level < logThreshold {
-			writable = 0
+			enabled = 0
 			handler = ioutil.Discard
 		} else if l.level >= outputThreshold && l.level >= logThreshold {
-			writable = 1
+			enabled = 1
 			handler = BothHandle
 		} else if l.level >= outputThreshold && l.level < logThreshold {
-			writable = 1
+			enabled = 1
 			handler = OutHandle
 		} else {
-			writable = 1
+			enabled = 1
 			handler = LogHandle
 		}
 
-		atomic.StoreInt32(&l.writable, 0)
+		atomic.StoreInt32(&l.enabled, 0)
 		l.Logger = log.New(handler, l.prefix, Flag)
-		atomic.StoreInt32(&l.writable, writable)
+		atomic.StoreInt32(&l.enabled, enabled)
 	}
 }
 
