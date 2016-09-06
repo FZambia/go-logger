@@ -1,7 +1,7 @@
 Go-logger
 =========
 
-Levelled logger for Go apps.
+Level-based logger for Go apps.
 
 Documentation
 -------------

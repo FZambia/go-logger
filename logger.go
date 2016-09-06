@@ -20,7 +20,9 @@ type LevelLogger struct {
 	Logger  *log.Logger
 }
 
-// skipLogging exists to prevent calling underlying logger methods when not needed.
+// Enabled exists to prevent calling underlying logger methods when not needed.
+// This can also called from library users before calling LevelLogger methods
+// to reduce allocations.
 func (n *LevelLogger) Enabled() bool {
 	return atomic.LoadInt32(&n.enabled) != 0
 }
