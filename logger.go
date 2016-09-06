@@ -17,7 +17,84 @@ type NotePad struct {
 	Handle io.Writer
 	Level  Level
 	Prefix string
-	Logger **log.Logger
+	Logger *log.Logger
+}
+
+// checkLevel exists to prevent calling underlying logger methods when not needed.
+func (n *NotePad) checkLevel() bool {
+	if n.Level < outputThreshold && n.Level < logThreshold {
+		return false
+	}
+	return true
+}
+
+func (n *NotePad) Print(v ...interface{}) {
+	if ok := n.checkLevel(); !ok {
+		return
+	}
+	n.Logger.Print(v...)
+}
+
+func (n *NotePad) Printf(format string, v ...interface{}) {
+	if ok := n.checkLevel(); !ok {
+		return
+	}
+	n.Logger.Printf(format, v...)
+}
+
+func (n *NotePad) Println(v ...interface{}) {
+	if ok := n.checkLevel(); !ok {
+		return
+	}
+	n.Logger.Println(v...)
+}
+
+// Fatal is equivalent to l.Print() followed by a call to os.Exit(1).
+func (n *NotePad) Fatal(v ...interface{}) {
+	if ok := n.checkLevel(); !ok {
+		return
+	}
+	n.Logger.Fatal(v...)
+}
+
+// Fatalf is equivalent to l.Printf() followed by a call to os.Exit(1).
+func (n *NotePad) Fatalf(format string, v ...interface{}) {
+	if ok := n.checkLevel(); !ok {
+		return
+	}
+	n.Logger.Fatalf(format, v...)
+}
+
+// Fatalln is equivalent to l.Println() followed by a call to os.Exit(1).
+func (n *NotePad) Fatalln(v ...interface{}) {
+	if ok := n.checkLevel(); !ok {
+		return
+	}
+	n.Logger.Fatalln(v...)
+}
+
+// Panic is equivalent to l.Print() followed by a call to panic().
+func (n *NotePad) Panic(v ...interface{}) {
+	if ok := n.checkLevel(); !ok {
+		return
+	}
+	n.Logger.Panic(v...)
+}
+
+// Panicf is equivalent to l.Printf() followed by a call to panic().
+func (n *NotePad) Panicf(format string, v ...interface{}) {
+	if ok := n.checkLevel(); !ok {
+		return
+	}
+	n.Logger.Panicf(format, v...)
+}
+
+// Panicln is equivalent to l.Println() followed by a call to panic().
+func (n *NotePad) Panicln(v ...interface{}) {
+	if ok := n.checkLevel(); !ok {
+		return
+	}
+	n.Logger.Panicln(v...)
 }
 
 const (
@@ -35,13 +112,7 @@ const (
 )
 
 var (
-	TRACE    *log.Logger
-	DEBUG    *log.Logger
-	INFO     *log.Logger
-	WARN     *log.Logger
-	ERROR    *log.Logger
-	CRITICAL *log.Logger
-	FATAL    *log.Logger
+	logger *log.Logger
 
 	LogHandle  io.Writer = ioutil.Discard
 	OutHandle  io.Writer = os.Stdout
@@ -49,15 +120,15 @@ var (
 
 	Flag int = log.Ldate | log.Ltime
 
-	NotePads []*NotePad = []*NotePad{trace, debug, info, warn, err, critical, fatal}
+	TRACE    *NotePad = &NotePad{Level: LevelTrace, Handle: os.Stdout, Logger: logger, Prefix: "[T]: "}
+	DEBUG    *NotePad = &NotePad{Level: LevelDebug, Handle: os.Stdout, Logger: logger, Prefix: "[D]: "}
+	INFO     *NotePad = &NotePad{Level: LevelInfo, Handle: os.Stdout, Logger: logger, Prefix: "[I]: "}
+	WARN     *NotePad = &NotePad{Level: LevelWarn, Handle: os.Stdout, Logger: logger, Prefix: "[W]: "}
+	ERROR    *NotePad = &NotePad{Level: LevelError, Handle: os.Stdout, Logger: logger, Prefix: "[E]: "}
+	CRITICAL *NotePad = &NotePad{Level: LevelCritical, Handle: os.Stdout, Logger: logger, Prefix: "[C]: "}
+	FATAL    *NotePad = &NotePad{Level: LevelFatal, Handle: os.Stdout, Logger: logger, Prefix: "[F]: "}
 
-	trace    *NotePad = &NotePad{Level: LevelTrace, Handle: os.Stdout, Logger: &TRACE, Prefix: "[T]: "}
-	debug    *NotePad = &NotePad{Level: LevelDebug, Handle: os.Stdout, Logger: &DEBUG, Prefix: "[D]: "}
-	info     *NotePad = &NotePad{Level: LevelInfo, Handle: os.Stdout, Logger: &INFO, Prefix: "[I]: "}
-	warn     *NotePad = &NotePad{Level: LevelWarn, Handle: os.Stdout, Logger: &WARN, Prefix: "[W]: "}
-	err      *NotePad = &NotePad{Level: LevelError, Handle: os.Stdout, Logger: &ERROR, Prefix: "[E]: "}
-	critical *NotePad = &NotePad{Level: LevelCritical, Handle: os.Stdout, Logger: &CRITICAL, Prefix: "[C]: "}
-	fatal    *NotePad = &NotePad{Level: LevelFatal, Handle: os.Stdout, Logger: &FATAL, Prefix: "[F]: "}
+	NotePads []*NotePad = []*NotePad{TRACE, DEBUG, INFO, WARN, ERROR, CRITICAL, FATAL}
 
 	logThreshold    Level = DefaultLogThreshold
 	outputThreshold Level = DefaultStdoutThreshold
@@ -81,7 +152,6 @@ func init() {
 // initialize initializes loggers
 func initialize() {
 	BothHandle = io.MultiWriter(LogHandle, OutHandle)
-
 	for _, n := range NotePads {
 		if n.Level < outputThreshold && n.Level < logThreshold {
 			n.Handle = ioutil.Discard
@@ -95,7 +165,7 @@ func initialize() {
 	}
 
 	for _, n := range NotePads {
-		*n.Logger = log.New(n.Handle, n.Prefix, Flag)
+		n.Logger = log.New(n.Handle, n.Prefix, Flag)
 	}
 }
 
