@@ -21,6 +21,7 @@ func TestLevels(t *testing.T) {
 func BenchmarkLoggingNoop(b *testing.B) {
 	// Log into io.Discard
 	SetStdoutThreshold(LevelNone)
+	SetLogThreshold(LevelNone)
 	m := map[string]interface{}{
 		"int": 1,
 		"str": "test",
