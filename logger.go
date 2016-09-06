@@ -1,6 +1,4 @@
-// Package logger provides a logger for Centrifugo server.
-// This is an adapted code from Steve Francia's jWalterWeatherman
-// library - see https://github.com/spf13/jWalterWeatherman
+// Package logger.
 package logger
 
 import (
@@ -8,90 +6,92 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sync/atomic"
 )
 
 // Level describes the chosen log level
 type Level int
 
-type NotePad struct {
-	Handle io.Writer
-	Level  Level
-	Prefix string
+// LevelLogger represents levelled logger.
+type LevelLogger struct {
+	write  int32
+	level  Level
+	prefix string
 	Logger *log.Logger
 }
 
 // skipLogging exists to prevent calling underlying logger methods when not needed.
-func (n *NotePad) skipLogging() bool {
-	if n.Level < outputThreshold && n.Level < logThreshold {
-		return true
-	}
-	return false
+func (n *LevelLogger) skipLogging() bool {
+	return atomic.LoadInt32(&n.write) == 0
 }
 
-func (n *NotePad) Print(v ...interface{}) {
-	if ok := n.skipLogging(); !ok {
+// Print calls underlying Logger Print func.
+func (n *LevelLogger) Print(v ...interface{}) {
+	if ok := n.skipLogging(); ok {
 		return
 	}
 	n.Logger.Print(v...)
 }
 
-func (n *NotePad) Printf(format string, v ...interface{}) {
+// Printf calls underlying Logger Printf func.
+func (n *LevelLogger) Printf(format string, v ...interface{}) {
 	if ok := n.skipLogging(); ok {
 		return
 	}
 	n.Logger.Printf(format, v...)
 }
 
-func (n *NotePad) Println(v ...interface{}) {
-	if ok := n.skipLogging(); !ok {
+// Println calls underlying Logger Println func.
+func (n *LevelLogger) Println(v ...interface{}) {
+	if ok := n.skipLogging(); ok {
 		return
 	}
 	n.Logger.Println(v...)
 }
 
-// Fatal is equivalent to l.Print() followed by a call to os.Exit(1).
-func (n *NotePad) Fatal(v ...interface{}) {
-	if ok := n.skipLogging(); !ok {
+// Fatal calls underlying Logger Fatal func.
+func (n *LevelLogger) Fatal(v ...interface{}) {
+	if ok := n.skipLogging(); ok {
 		return
 	}
 	n.Logger.Fatal(v...)
 }
 
-// Fatalf is equivalent to l.Printf() followed by a call to os.Exit(1).
-func (n *NotePad) Fatalf(format string, v ...interface{}) {
-	if ok := n.skipLogging(); !ok {
+// Fatalf calls underlying Logger Fatalf func.
+func (n *LevelLogger) Fatalf(format string, v ...interface{}) {
+	if ok := n.skipLogging(); ok {
 		return
 	}
 	n.Logger.Fatalf(format, v...)
 }
 
-// Fatalln is equivalent to l.Println() followed by a call to os.Exit(1).
-func (n *NotePad) Fatalln(v ...interface{}) {
-	if ok := n.skipLogging(); !ok {
+// Fatalln calls underlying Logger Fatalln func.
+func (n *LevelLogger) Fatalln(v ...interface{}) {
+	if ok := n.skipLogging(); ok {
 		return
 	}
 	n.Logger.Fatalln(v...)
 }
 
-// Panic is equivalent to l.Print() followed by a call to panic().
-func (n *NotePad) Panic(v ...interface{}) {
-	if ok := n.skipLogging(); !ok {
+// Panic calls underlying Logger Panic func.
+func (n *LevelLogger) Panic(v ...interface{}) {
+	if ok := n.skipLogging(); ok {
 		return
 	}
 	n.Logger.Panic(v...)
 }
 
-// Panicf is equivalent to l.Printf() followed by a call to panic().
-func (n *NotePad) Panicf(format string, v ...interface{}) {
-	if ok := n.skipLogging(); !ok {
+// Panicf calls underlying Logger Panicf func.
+func (n *LevelLogger) Panicf(format string, v ...interface{}) {
+	if ok := n.skipLogging(); ok {
 		return
 	}
 	n.Logger.Panicf(format, v...)
 }
 
-// Panicln is equivalent to l.Println() followed by a call to panic().
-func (n *NotePad) Panicln(v ...interface{}) {
-	if ok := n.skipLogging(); !ok {
+// Panicln calls underlying Logger Panicln func.
+func (n *LevelLogger) Panicln(v ...interface{}) {
+	if ok := n.skipLogging(); ok {
 		return
 	}
 	n.Logger.Panicln(v...)
@@ -120,15 +120,15 @@ var (
 
 	Flag int = log.Ldate | log.Ltime
 
-	TRACE    *NotePad = &NotePad{Level: LevelTrace, Handle: os.Stdout, Logger: logger, Prefix: "[T]: "}
-	DEBUG    *NotePad = &NotePad{Level: LevelDebug, Handle: os.Stdout, Logger: logger, Prefix: "[D]: "}
-	INFO     *NotePad = &NotePad{Level: LevelInfo, Handle: os.Stdout, Logger: logger, Prefix: "[I]: "}
-	WARN     *NotePad = &NotePad{Level: LevelWarn, Handle: os.Stdout, Logger: logger, Prefix: "[W]: "}
-	ERROR    *NotePad = &NotePad{Level: LevelError, Handle: os.Stdout, Logger: logger, Prefix: "[E]: "}
-	CRITICAL *NotePad = &NotePad{Level: LevelCritical, Handle: os.Stdout, Logger: logger, Prefix: "[C]: "}
-	FATAL    *NotePad = &NotePad{Level: LevelFatal, Handle: os.Stdout, Logger: logger, Prefix: "[F]: "}
+	TRACE    *LevelLogger = &LevelLogger{level: LevelTrace, Logger: logger, prefix: "[T]: "}
+	DEBUG    *LevelLogger = &LevelLogger{level: LevelDebug, Logger: logger, prefix: "[D]: "}
+	INFO     *LevelLogger = &LevelLogger{level: LevelInfo, Logger: logger, prefix: "[I]: "}
+	WARN     *LevelLogger = &LevelLogger{level: LevelWarn, Logger: logger, prefix: "[W]: "}
+	ERROR    *LevelLogger = &LevelLogger{level: LevelError, Logger: logger, prefix: "[E]: "}
+	CRITICAL *LevelLogger = &LevelLogger{level: LevelCritical, Logger: logger, prefix: "[C]: "}
+	FATAL    *LevelLogger = &LevelLogger{level: LevelFatal, Logger: logger, prefix: "[F]: "}
 
-	NotePads []*NotePad = []*NotePad{TRACE, DEBUG, INFO, WARN, ERROR, CRITICAL, FATAL}
+	loggers []*LevelLogger = []*LevelLogger{TRACE, DEBUG, INFO, WARN, ERROR, CRITICAL, FATAL}
 
 	logThreshold    Level = DefaultLogThreshold
 	outputThreshold Level = DefaultStdoutThreshold
@@ -149,27 +149,32 @@ func init() {
 	initialize()
 }
 
-// initialize initializes loggers
+// initialize initializes loggers.
 func initialize() {
 	BothHandle = io.MultiWriter(LogHandle, OutHandle)
-	for _, n := range NotePads {
-		if n.Level < outputThreshold && n.Level < logThreshold {
-			n.Handle = ioutil.Discard
-		} else if n.Level >= outputThreshold && n.Level >= logThreshold {
-			n.Handle = BothHandle
-		} else if n.Level >= outputThreshold && n.Level < logThreshold {
-			n.Handle = OutHandle
-		} else {
-			n.Handle = LogHandle
-		}
-	}
+	for i, l := range loggers {
 
-	for _, n := range NotePads {
-		n.Logger = log.New(n.Handle, n.Prefix, Flag)
+		var handler io.Writer
+
+		if l.level < outputThreshold && l.level < logThreshold {
+			atomic.StoreInt32(&loggers[i].write, 0)
+			handler = ioutil.Discard
+		} else if l.level >= outputThreshold && l.level >= logThreshold {
+			atomic.StoreInt32(&loggers[i].write, 1)
+			handler = BothHandle
+		} else if l.level >= outputThreshold && l.level < logThreshold {
+			atomic.StoreInt32(&loggers[i].write, 1)
+			handler = OutHandle
+		} else {
+			atomic.StoreInt32(&loggers[i].write, 1)
+			handler = LogHandle
+		}
+
+		l.Logger = log.New(handler, l.prefix, Flag)
 	}
 }
 
-// Ensures that the level provided is within the bounds of available levels
+// Ensures that the level provided is within the bounds of available levels.
 func levelCheck(level Level) Level {
 	switch {
 	case level <= LevelTrace:
@@ -181,24 +186,29 @@ func levelCheck(level Level) Level {
 	}
 }
 
-// Establishes a threshold where anything matching or above will be logged
+// SetLogThreshold establishes a threshold where anything matching or above will be logged.
 func SetLogThreshold(level Level) {
-	logThreshold = levelCheck(level)
-	initialize()
+	thresholdChanged := level != logThreshold
+	if thresholdChanged {
+		logThreshold = levelCheck(level)
+		initialize()
+	}
 }
 
-// Establishes a threshold where anything matching or above will be output
+// SetStdoutThreshold establishes a threshold where anything matching or above will be output.
 func SetStdoutThreshold(level Level) {
-	outputThreshold = levelCheck(level)
-	initialize()
+	thresholdChanged := level != outputThreshold
+	if thresholdChanged {
+		outputThreshold = levelCheck(level)
+		initialize()
+	}
 }
 
-// Conveniently Sets the Log Handle to a io.writer created for the file behind the given filepath
-// Will only append to this file
+// SetLogFile sets the LogHandle to a io.writer created for the file behind the given file path.
+// Will append to this file.
 func SetLogFile(path string) error {
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
 	if err != nil {
-		CRITICAL.Println("Failed to open log file:", path, err)
 		return err
 	}
 	LogHandle = file
@@ -206,7 +216,11 @@ func SetLogFile(path string) error {
 	return nil
 }
 
+// SetLogFlag sets global log flag used in package.
 func SetLogFlag(flag int) {
+	flagChanged := flag != Flag
 	Flag = flag
-	initialize()
+	if flagChanged {
+		initialize()
+	}
 }
