@@ -14,15 +14,15 @@ type Level int
 
 // LevelLogger represents levelled logger.
 type LevelLogger struct {
-	write  int32
-	level  Level
-	prefix string
-	Logger *log.Logger
+	writable int32
+	level    Level
+	prefix   string
+	Logger   *log.Logger
 }
 
 // skipLogging exists to prevent calling underlying logger methods when not needed.
 func (n *LevelLogger) skipLogging() bool {
-	return atomic.LoadInt32(&n.write) == 0
+	return atomic.LoadInt32(&n.writable) == 0
 }
 
 // Print calls underlying Logger Print func.
@@ -152,25 +152,28 @@ func init() {
 // initialize initializes loggers.
 func initialize() {
 	BothHandle = io.MultiWriter(LogHandle, OutHandle)
-	for i, l := range loggers {
+	for _, l := range loggers {
 
 		var handler io.Writer
+		var writable int32
 
 		if l.level < outputThreshold && l.level < logThreshold {
-			atomic.StoreInt32(&loggers[i].write, 0)
+			writable = 0
 			handler = ioutil.Discard
 		} else if l.level >= outputThreshold && l.level >= logThreshold {
-			atomic.StoreInt32(&loggers[i].write, 1)
+			writable = 1
 			handler = BothHandle
 		} else if l.level >= outputThreshold && l.level < logThreshold {
-			atomic.StoreInt32(&loggers[i].write, 1)
+			writable = 1
 			handler = OutHandle
 		} else {
-			atomic.StoreInt32(&loggers[i].write, 1)
+			writable = 1
 			handler = LogHandle
 		}
 
+		atomic.StoreInt32(&l.writable, 0)
 		l.Logger = log.New(handler, l.prefix, Flag)
+		atomic.StoreInt32(&l.writable, writable)
 	}
 }
 
