@@ -20,30 +20,30 @@ type NotePad struct {
 	Logger *log.Logger
 }
 
-// checkLevel exists to prevent calling underlying logger methods when not needed.
-func (n *NotePad) checkLevel() bool {
+// skipLogging exists to prevent calling underlying logger methods when not needed.
+func (n *NotePad) skipLogging() bool {
 	if n.Level < outputThreshold && n.Level < logThreshold {
-		return false
+		return true
 	}
-	return true
+	return false
 }
 
 func (n *NotePad) Print(v ...interface{}) {
-	if ok := n.checkLevel(); !ok {
+	if ok := n.skipLogging(); !ok {
 		return
 	}
 	n.Logger.Print(v...)
 }
 
 func (n *NotePad) Printf(format string, v ...interface{}) {
-	if ok := n.checkLevel(); !ok {
+	if ok := n.skipLogging(); ok {
 		return
 	}
 	n.Logger.Printf(format, v...)
 }
 
 func (n *NotePad) Println(v ...interface{}) {
-	if ok := n.checkLevel(); !ok {
+	if ok := n.skipLogging(); !ok {
 		return
 	}
 	n.Logger.Println(v...)
@@ -51,7 +51,7 @@ func (n *NotePad) Println(v ...interface{}) {
 
 // Fatal is equivalent to l.Print() followed by a call to os.Exit(1).
 func (n *NotePad) Fatal(v ...interface{}) {
-	if ok := n.checkLevel(); !ok {
+	if ok := n.skipLogging(); !ok {
 		return
 	}
 	n.Logger.Fatal(v...)
@@ -59,7 +59,7 @@ func (n *NotePad) Fatal(v ...interface{}) {
 
 // Fatalf is equivalent to l.Printf() followed by a call to os.Exit(1).
 func (n *NotePad) Fatalf(format string, v ...interface{}) {
-	if ok := n.checkLevel(); !ok {
+	if ok := n.skipLogging(); !ok {
 		return
 	}
 	n.Logger.Fatalf(format, v...)
@@ -67,7 +67,7 @@ func (n *NotePad) Fatalf(format string, v ...interface{}) {
 
 // Fatalln is equivalent to l.Println() followed by a call to os.Exit(1).
 func (n *NotePad) Fatalln(v ...interface{}) {
-	if ok := n.checkLevel(); !ok {
+	if ok := n.skipLogging(); !ok {
 		return
 	}
 	n.Logger.Fatalln(v...)
@@ -75,7 +75,7 @@ func (n *NotePad) Fatalln(v ...interface{}) {
 
 // Panic is equivalent to l.Print() followed by a call to panic().
 func (n *NotePad) Panic(v ...interface{}) {
-	if ok := n.checkLevel(); !ok {
+	if ok := n.skipLogging(); !ok {
 		return
 	}
 	n.Logger.Panic(v...)
@@ -83,7 +83,7 @@ func (n *NotePad) Panic(v ...interface{}) {
 
 // Panicf is equivalent to l.Printf() followed by a call to panic().
 func (n *NotePad) Panicf(format string, v ...interface{}) {
-	if ok := n.checkLevel(); !ok {
+	if ok := n.skipLogging(); !ok {
 		return
 	}
 	n.Logger.Panicf(format, v...)
@@ -91,7 +91,7 @@ func (n *NotePad) Panicf(format string, v ...interface{}) {
 
 // Panicln is equivalent to l.Println() followed by a call to panic().
 func (n *NotePad) Panicln(v ...interface{}) {
-	if ok := n.checkLevel(); !ok {
+	if ok := n.skipLogging(); !ok {
 		return
 	}
 	n.Logger.Panicln(v...)
