@@ -1,4 +1,3 @@
-// Package logger.
 package logger
 
 import (
