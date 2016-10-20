@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -26,12 +27,14 @@ func (n *LevelLogger) Enabled() bool {
 	return atomic.LoadInt32(&n.enabled) != 0
 }
 
+var callDepth = 2
+
 // Print calls underlying Logger Print func.
 func (n *LevelLogger) Print(v ...interface{}) {
 	if !n.Enabled() {
 		return
 	}
-	n.logger.Print(v...)
+	n.logger.Output(callDepth, fmt.Sprint(v...))
 }
 
 // Printf calls underlying Logger Printf func.
@@ -39,7 +42,7 @@ func (n *LevelLogger) Printf(format string, v ...interface{}) {
 	if !n.Enabled() {
 		return
 	}
-	n.logger.Printf(format, v...)
+	n.logger.Output(callDepth, fmt.Sprintf(format, v...))
 }
 
 // Println calls underlying Logger Println func.
@@ -47,7 +50,7 @@ func (n *LevelLogger) Println(v ...interface{}) {
 	if !n.Enabled() {
 		return
 	}
-	n.logger.Println(v...)
+	n.logger.Output(callDepth, fmt.Sprintln(v...))
 }
 
 // Fatal calls underlying Logger Fatal func.
@@ -55,7 +58,8 @@ func (n *LevelLogger) Fatal(v ...interface{}) {
 	if !n.Enabled() {
 		return
 	}
-	n.logger.Fatal(v...)
+	n.logger.Output(callDepth, fmt.Sprint(v...))
+	os.Exit(1)
 }
 
 // Fatalf calls underlying Logger Fatalf func.
@@ -63,7 +67,8 @@ func (n *LevelLogger) Fatalf(format string, v ...interface{}) {
 	if !n.Enabled() {
 		return
 	}
-	n.logger.Fatalf(format, v...)
+	n.logger.Output(callDepth, fmt.Sprintf(format, v...))
+	os.Exit(1)
 }
 
 // Fatalln calls underlying Logger Fatalln func.
@@ -71,7 +76,8 @@ func (n *LevelLogger) Fatalln(v ...interface{}) {
 	if !n.Enabled() {
 		return
 	}
-	n.logger.Fatalln(v...)
+	n.logger.Output(callDepth, fmt.Sprintln(v...))
+	os.Exit(1)
 }
 
 // Panic calls underlying Logger Panic func.
@@ -79,7 +85,9 @@ func (n *LevelLogger) Panic(v ...interface{}) {
 	if !n.Enabled() {
 		return
 	}
-	n.logger.Panic(v...)
+	s := fmt.Sprint(v...)
+	n.logger.Output(callDepth, s)
+	panic(s)
 }
 
 // Panicf calls underlying Logger Panicf func.
@@ -87,7 +95,9 @@ func (n *LevelLogger) Panicf(format string, v ...interface{}) {
 	if !n.Enabled() {
 		return
 	}
-	n.logger.Panicf(format, v...)
+	s := fmt.Sprintf(format, v...)
+	n.logger.Output(callDepth, s)
+	panic(s)
 }
 
 // Panicln calls underlying Logger Panicln func.
@@ -95,7 +105,9 @@ func (n *LevelLogger) Panicln(v ...interface{}) {
 	if !n.Enabled() {
 		return
 	}
-	n.logger.Panicln(v...)
+	s := fmt.Sprintln(v...)
+	n.logger.Output(callDepth, s)
+	panic(s)
 }
 
 const (
